@@ -1,51 +1,58 @@
 
 #include "MyShell.h"
 #include "MyFunctionShell.h"
+
 int main()
 {
     welcome();
-    getLocation();
     while (1)
     {
+        getLocation();
         char *str = inputFromUser();
-        puts(str);
 
+        if (strcmp(str, "exit") == 0)
+            logout(str);
         char **argumnts = splitString(str);
+        if (strcmp(str, "echo") == 0)
+            echo(argumnts);
+        if (strcmp(str, "cd") == 0)
+            cd(argumnts);
+        if (strcmp(str, "cp") == 0)
+            cp(argumnts);
+        if (strcmp(str, "dir") == 0)
+            get_dir();
 
-        for (int i = 0; argumnts[i] != NULL; i++)
-        {
-            printf("index %d -> ", i);
-
-            puts(argumnts[i]);
-        }
         free(str);
         free(argumnts);
-        break;
     }
 
     return 0;
 }
+
 void welcome()
 {
     char *logo[] = {
-        "                                                                                                          \n",
-        "               ___       __   __         ___    ___  __                   __        ___                   \n",
-        "         |  | |__  |    /  ` /  \  |\/| |__      |  /  \     |\/| \ /    /__` |__| |__  |    |            \n",
-        "-------------------------------------\033[1m Mickael Halimi-----------------------------------------------\n",
-        "         |/\| |___ |___ \__, \__/  |  | |___     |  \__/     |  |  |     .__/ |  | |___ |___ |___         \n",
+        "                          ╱╱╱╱╱╱╱╱╭╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭╮╱╱╱╱╭╮╭╮            \n",
+        "                          ╱╱╱╱╱╱╱╱┃┃╱╱╱╱╱╱╱╱╱╱╱╱╱╭╯╰╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃┃╱╱╱╱┃┃┃┃            \n",
+        "                          ╭╮╭╮╭┳━━┫┃╭━━┳━━┳╮╭┳━━╮╰╮╭╋━━╮╭╮╭┳╮╱╭╮╭━━┫╰━┳━━┫┃┃┃            \n",
+        "                          ┃╰╯╰╯┃┃━┫┃┃╭━┫╭╮┃╰╯┃┃━┫╱┃┃┃╭╮┃┃╰╯┃┃╱┃┃┃━━┫╭╮┃┃━┫┃┃┃            \n",
+        "                          ╰╮╭╮╭┫┃━┫╰┫╰━┫╰╯┃┃┃┃┃━┫╱┃╰┫╰╯┃┃┃┃┃╰━╯┃┣━━┃┃┃┃┃━┫╰┫╰╮           \n",
+        "                          ╱╰╯╰╯╰━━┻━┻━━┻━━┻┻┻┻━━╯╱╰━┻━━╯╰┻┻┻━╮╭╯╰━━┻╯╰┻━━┻━┻━╯           \n",
+        "                          ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╯┃                          \n",
+        "                          ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━━╯                          \n",
+        "                          -------------------\033[1m Mickael Halimi -----------------           \n",
         '\0'};
 
     int i = 0;
     purple();
-    // printf();
     green();
     do
     {
         printf("%s", logo[i++]);
         if (i % 2 != 0 || i > 26)
-            green();
+            red();
         else
-            blue();
+            purple();
     } while (logo[i]);
     reset();
     puts("\n");
@@ -53,15 +60,19 @@ void welcome()
 
 void blue()
 {
-    printf("\033[0;34m");
+    printf("\033[1;34m");
 }
 void green()
 {
-    printf("\033[0;32m");
+    printf("\033[1;32m");
 }
 void purple()
 {
-    printf("\033[0;35m");
+    printf("\033[1;35m");
+}
+void red()
+{
+    printf("\033[1;31m");
 }
 void reset()
 {

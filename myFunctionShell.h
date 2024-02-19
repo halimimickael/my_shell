@@ -3,7 +3,17 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
+#include <netdb.h>
+#include <dirent.h>
 
 char *inputFromUser();
 char **splitString(char *);
 void getLocation();
+char *my_strtok(char *, const char *);
+char *getHostname();
+void logout(char *);
+void echo(char **);
+void cd(char **);
+void cp(char **);
+void get_dir();
