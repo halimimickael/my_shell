@@ -1,5 +1,27 @@
 #include "MyFunctionShell.h"
 
+void getLocation()
+{
+    char location[256];
+    if (getcwd(location, sizeof(location)) == NULL)
+    {
+        puts("Error");
+        return;
+    }
+
+    char *hostname = getHostname();
+    printf("\033[1;31m");
+    printf("%s@%s", getenv("USER"), hostname);
+    printf("\033[0m");
+    printf(":");
+    printf("\033[1;35m");
+    printf("%s", location);
+    printf("\033[0m");
+    printf("$");
+
+    free(hostname);
+}
+
 char *my_strtok(char *str, const char *delimitation)
 {
     static char *next_token = NULL;
@@ -120,34 +142,36 @@ char *getHostname()
     return strdup(hostname);
 }
 
-void getLocation()
+char *trim(char *str)
 {
-    char location[256];
-    if (getcwd(location, sizeof(location)) == NULL)
+    while (*str && isspace(*str))
     {
-        puts("Error");
-        return;
+        str++;
     }
 
-    char *hostname = getHostname();
-    printf("\033[1;31m");
-    printf("%s@%s", getenv("USER"), hostname);
-    printf("\033[0m");
-    printf(":");
-    printf("\033[1;35m");
-    printf("%s", location);
-    printf("\033[0m");
-    printf("$");
+    int len = strlen(str);
+    while (len > 0 && isspace(str[len - 1]))
+    {
+        len--;
+    }
 
-    free(hostname);
+    str[len] = '\0';
+
+    return str;
 }
 
 void logout(char *str)
 {
+    char *trimmed_str = trim(str);
     char *hostname = getHostname();
-    printf("See you later %s!", hostname);
-    puts(" ");
-    free(str);
+
+    if (strncmp(trimmed_str, "exit", 4) == 0)
+    {
+        printf("See you later %s!", hostname);
+        puts(" ");
+        printf("Exiting program...\n");
+    }
+    free(trimmed_str);
     exit(0);
 }
 
@@ -162,38 +186,48 @@ void echo(char **argumnts)
 
 void cd(char **path)
 {
-    if (chdir(path[1]) != 0)
-        printf("bash: cd: %s: No such file or directory\n", path[1]);
+    if (path[1][0] == '"' && path[1][strlen(path[1]) - 1] == '"')
+    {
+
+        char cleanPath[strlen(path[1]) - 1];
+        strncpy(cleanPath, path[1] + 1, strlen(path[1]) - 2);
+        cleanPath[strlen(path[1]) - 2] = '\0';
+
+        if (chdir(cleanPath) != 0)
+            printf("bash: cd: %s: No such file or directory\n", cleanPath);
+    }
+    else
+    {
+        if (chdir(path[1]) != 0)
+            printf("bash: cd: %s: No such file or directory\n", path[1]);
+    }
 }
 
-void cp(char **arguments)
+void cp(const char *source_path, const char *destination_path)
 {
     char ch;
     FILE *src, *des;
 
-    // Ouvrir le fichier source en mode lecture
-    if ((src = fopen(arguments[1], "r")) == NULL)
+    if ((src = fopen(source_path, "r")) == NULL)
     {
-        puts("Error: Unable to open source file.");
+        perror("Error opening source file");
         return;
     }
 
-    // Ouvrir le fichier de destination en mode ajout
-    if ((des = fopen(arguments[2], "a")) == NULL)
+    if ((des = fopen(destination_path, "a")) == NULL)
     {
-        fclose(src); // Fermer le fichier source avant de quitter
-        puts("Error: Unable to open destination file.");
+        fclose(src);
+        perror("Error opening destination file");
         return;
     }
 
-    // Copier le contenu du fichier source vers le fichier de destination
     while ((ch = fgetc(src)) != EOF)
         fputc(ch, des);
 
-    // Fermer les fichiers après la copie
     fclose(src);
     fclose(des);
 }
+
 void get_dir()
 {
     DIR *directory;
@@ -209,8 +243,11 @@ void get_dir()
 
     while ((entry = readdir(directory)) != NULL)
     {
-        printf("%s\n", entry->d_name);
+        printf("%s    ", entry->d_name);
     }
-
+    puts(" ");
     closedir(directory);
 }
+
+// delete()
+// system_call()

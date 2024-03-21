@@ -15,5 +15,6 @@ char *getHostname();
 void logout(char *);
 void echo(char **);
 void cd(char **);
-void cp(char **);
+void cp(const char *, const char *);
 void get_dir();
+char *trim(char *str);

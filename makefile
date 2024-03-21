@@ -12,7 +12,6 @@ myShell.o: myShell.c myShell.h
 	$(CC) $(FLAGS) -c myShell.c 
 
 
-
 myFunctionShell.o: myFunctionShell.c myFunctionShell.h
 	$(CC) $(FLAGS) -c myFunctionShell.c 
 

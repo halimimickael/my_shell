@@ -10,20 +10,33 @@ int main()
         getLocation();
         char *str = inputFromUser();
 
-        if (strcmp(str, "exit") == 0)
+        if (strncmp(str, "exit", 4) == 0)
+        {
             logout(str);
-        char **argumnts = splitString(str);
-        if (strcmp(str, "echo") == 0)
-            echo(argumnts);
-        if (strcmp(str, "cd") == 0)
-            cd(argumnts);
-        if (strcmp(str, "cp") == 0)
-            cp(argumnts);
-        if (strcmp(str, "dir") == 0)
+            break;
+        }
+
+        char **arguments = splitString(str);
+        char *command = arguments[0];
+
+        if (strcmp(command, "echo") == 0)
+            echo(arguments);
+        else if (strcmp(command, "cd") == 0)
+            cd(arguments);
+        else if (strcmp(command, "cp") == 0)
+        {
+            if (arguments[1] == NULL || arguments[2] == NULL)
+                printf("Usage: cp source_file destination_file\n");
+            else
+                cp(arguments[1], arguments[2]);
+        }
+        else if (strcmp(command, "dir") == 0)
             get_dir();
+        else
+            printf("Unknown command: %s\n", command);
 
         free(str);
-        free(argumnts);
+        free(arguments);
     }
 
     return 0;
