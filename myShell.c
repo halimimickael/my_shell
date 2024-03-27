@@ -9,20 +9,29 @@ int main()
     {
         getLocation();
         char *str = inputFromUser();
+        char **arguments = splitString(str);
+        char *command = arguments[0];
 
         if (strncmp(str, "exit", 4) == 0)
         {
             logout(str);
             break;
         }
-
-        char **arguments = splitString(str);
-        char *command = arguments[0];
-
-        if (strcmp(command, "echo") == 0)
+        else if (strcmp(command, "echo") == 0)
             echo(arguments);
-        else if (strcmp(command, "cd") == 0)
-            cd(arguments);
+
+        else if (strcmp(str, "cd") == 0)
+        {
+            if (*arguments[1] == '"')
+            {
+                char *path = recoverString(arguments + 1, " ");
+                cd(path);
+            }
+            else
+            {
+                cd(arguments[1]);
+            }
+        }
         else if (strcmp(command, "cp") == 0)
         {
             if (arguments[1] == NULL || arguments[2] == NULL)
@@ -32,6 +41,8 @@ int main()
         }
         else if (strcmp(command, "dir") == 0)
             get_dir();
+        else if (strcmp(command, "delete") == 0)
+            my_delete(arguments);
         else
             printf("Unknown command: %s\n", command);
 

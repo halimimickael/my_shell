@@ -184,22 +184,38 @@ void echo(char **argumnts)
     puts("");
 }
 
-void cd(char **path)
+char *recoverString(char **arguments, char *delim)
 {
-    if (path[1][0] == '"' && path[1][strlen(path[1]) - 1] == '"')
+    char *recoverString = arguments[0];
+    recoverString++;
+
+    for (char **p = arguments; *p != NULL; p++)
     {
-
-        char cleanPath[strlen(path[1]) - 1];
-        strncpy(cleanPath, path[1] + 1, strlen(path[1]) - 2);
-        cleanPath[strlen(path[1]) - 2] = '\0';
-
-        if (chdir(cleanPath) != 0)
-            printf("bash: cd: %s: No such file or directory\n", cleanPath);
+        char *s = *p;
+        while (1)
+        {
+            if (*s == '\0')
+            {
+                *s = *delim;
+                break;
+            }
+            s++;
+            if (*s == '"')
+            {
+                *s = '\0';
+                return recoverString;
+            }
+        }
     }
-    else
+    recoverString[strlen(recoverString) - 1] = '\0';
+    return recoverString;
+}
+
+void cd(char *path)
+{
+    if (chdir(path) != 0)
     {
-        if (chdir(path[1]) != 0)
-            printf("bash: cd: %s: No such file or directory\n", path[1]);
+        printf("Error: No such file or directory '%s'\n", path);
     }
 }
 
@@ -249,5 +265,83 @@ void get_dir()
     closedir(directory);
 }
 
-// delete()
-// system_call()
+void my_delete(char **str)
+{
+    char *path = str[1];
+
+    if (path[0] == '"')
+    {
+        char *end_quote = strchr(path + 1, '"');
+        if (end_quote != NULL)
+        {
+            int length = end_quote - path - 1;
+            char *temp_path = malloc(length + 1);
+            if (temp_path != NULL)
+            {
+                strncpy(temp_path, path + 1, length);
+                temp_path[length] = '\0';
+                path = temp_path;
+            }
+            else
+            {
+                printf("Error: Out of memory\n");
+                return;
+            }
+        }
+        else
+        {
+            printf("Error: Unclosed quotes\n");
+            return;
+        }
+    }
+
+    // delete file
+    if (unlink(path) != 0)
+    {
+        printf("-myShell: unlink: %s: Aucun fichier ou répertoire de ce type\n", path);
+    }
+
+    if (path != str[1])
+    {
+        free(path);
+    }
+}
+
+void systemCall(char **arg)
+{
+    pid_t pid = fork();
+    if (pid == -1)
+    {
+        printf("fork err\n");
+        return;
+    }
+    if (pid == 0 && execvp(arg[0], arg) == -1)
+        exit(1);
+}
+
+void mypipe(char **argv1, char **argv2)
+{
+    int fildes[2];
+    if (fork() == 0)
+    {
+        pipe(fildes);
+        if (fork() == 0)
+        {
+            /* first component of command line */
+            close(STDOUT_FILENO);
+            dup(fildes[1]);
+            close(fildes[1]);
+            close(fildes[0]);
+            /* stdout now goes to pipe */
+            /* child process does command */
+            execvp(argv1[0], argv1);
+        }
+        /* 2nd command component of command line */
+        close(STDIN_FILENO);
+        dup(fildes[0]);
+        close(fildes[0]);
+        close(fildes[1]);
+        /* standard input now comes from pipe */
+        execvp(argv2[0], argv2);
+    }
+}
