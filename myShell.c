@@ -1,6 +1,12 @@
-
 #include "MyShell.h"
 #include "MyFunctionShell.h"
+
+void welcome();
+void blue();
+void green();
+void purple();
+void red();
+void reset();
 
 int main()
 {
@@ -17,14 +23,25 @@ int main()
             logout(str);
             break;
         }
-        else if (strcmp(command, "echo") == 0)
-            echo(arguments);
-
+        else if (strcmp(str, "echo") == 0)
+        {
+            for (char **p = arguments + 1; *p != NULL; p++)
+            {
+                if (strcmp(*p, ">>") == 0)
+                {
+                    echoappend(arguments);
+                }
+                // else if (strcmp(*p, ">") == 0)
+                // {
+                //     echorite(arguments);
+                // }
+            }
+        }
         else if (strcmp(str, "cd") == 0)
         {
             if (*arguments[1] == '"')
             {
-                char *path = recoverString(arguments + 1, " ");
+                char *path = myRecoverString(arguments + 1, " ");
                 cd(path);
             }
             else
@@ -43,8 +60,10 @@ int main()
             get_dir();
         else if (strcmp(command, "delete") == 0)
             my_delete(arguments);
-        else
-            printf("Unknown command: %s\n", command);
+        else if (strcmp(str, "mv") == 0)
+        {
+            move(arguments);
+        }
 
         free(str);
         free(arguments);
@@ -56,14 +75,14 @@ int main()
 void welcome()
 {
     char *logo[] = {
-        "                          ╱╱╱╱╱╱╱╱╭╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭╮╱╱╱╱╭╮╭╮            \n",
-        "                          ╱╱╱╱╱╱╱╱┃┃╱╱╱╱╱╱╱╱╱╱╱╱╱╭╯╰╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃┃╱╱╱╱┃┃┃┃            \n",
+        "                          ╱╱╱╱╱╱╱╱╭╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭╮╱╱╱╱╭╮╭╮            \n",
+        "                          ╱╱╱╱╱╱╱╱┃┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭╯╰╮╱╱╱╱╱╱╱╱╱╱╱╱╱┃┃╱╱╱╱┃┃┃┃            \n",
         "                          ╭╮╭╮╭┳━━┫┃╭━━┳━━┳╮╭┳━━╮╰╮╭╋━━╮╭╮╭┳╮╱╭╮╭━━┫╰━┳━━┫┃┃┃            \n",
         "                          ┃╰╯╰╯┃┃━┫┃┃╭━┫╭╮┃╰╯┃┃━┫╱┃┃┃╭╮┃┃╰╯┃┃╱┃┃┃━━┫╭╮┃┃━┫┃┃┃            \n",
         "                          ╰╮╭╮╭┫┃━┫╰┫╰━┫╰╯┃┃┃┃┃━┫╱┃╰┫╰╯┃┃┃┃┃╰━╯┃┣━━┃┃┃┃┃━┫╰┫╰╮           \n",
         "                          ╱╰╯╰╯╰━━┻━┻━━┻━━┻┻┻┻━━╯╱╰━┻━━╯╰┻┻┻━╮╭╯╰━━┻╯╰┻━━┻━┻━╯           \n",
-        "                          ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╯┃                          \n",
-        "                          ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━━╯                          \n",
+        "                          ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╯┃                          \n",
+        "                          ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━━╯                          \n",
         "                          -------------------\033[1m Mickael Halimi -----------------           \n",
         '\0'};
 

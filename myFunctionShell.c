@@ -32,7 +32,6 @@ char *my_strtok(char *str, const char *delimitation)
     if (next_token == NULL || *next_token == '\0')
         return NULL;
 
-    // Ignore delimiters at the beginning
     while (*next_token != '\0')
     {
         int is_delimitation = 0;
@@ -49,13 +48,11 @@ char *my_strtok(char *str, const char *delimitation)
         next_token++;
     }
 
-    // If we reach the end of the string, return NULL
     if (*next_token == '\0')
         return NULL;
 
     token_start = next_token;
 
-    // Find the end of the token
     while (*next_token != '\0')
     {
         int is_delimitation = 0;
@@ -73,7 +70,6 @@ char *my_strtok(char *str, const char *delimitation)
         next_token++;
     }
 
-    // If a delimiter is found, replace it with '\0'
     if (*next_token != '\0')
     {
         *next_token = '\0';
@@ -88,7 +84,6 @@ char *inputFromUser()
     char ch;
     int size = 0;
     char *str = (char *)malloc((size + 1) * sizeof(char));
-    // stdin = hello hello\n
     while ((ch = getchar()) != '\n')
     {
         *(str + size) = ch;
@@ -184,12 +179,12 @@ void echo(char **argumnts)
     puts("");
 }
 
-char *recoverString(char **arguments, char *delim)
+char *myRecoverString(char **arguments, char *delim)
 {
-    char *recoverString = arguments[0];
-    recoverString++;
+    char *recoveredString = arguments[0] + 1;
 
-    for (char **p = arguments; *p != NULL; p++)
+    char **p = arguments;
+    while (*p != NULL)
     {
         char *s = *p;
         while (1)
@@ -203,12 +198,14 @@ char *recoverString(char **arguments, char *delim)
             if (*s == '"')
             {
                 *s = '\0';
-                return recoverString;
+                return recoveredString;
             }
         }
+        p++;
     }
-    recoverString[strlen(recoverString) - 1] = '\0';
-    return recoverString;
+
+    recoveredString[strlen(recoveredString) - 1] = '\0';
+    return recoveredString;
 }
 
 void cd(char *path)
@@ -265,46 +262,31 @@ void get_dir()
     closedir(directory);
 }
 
-void my_delete(char **str)
+void my_delete(char **args)
 {
-    char *path = str[1];
-
-    if (path[0] == '"')
+    if (args[1] == NULL)
     {
-        char *end_quote = strchr(path + 1, '"');
-        if (end_quote != NULL)
-        {
-            int length = end_quote - path - 1;
-            char *temp_path = malloc(length + 1);
-            if (temp_path != NULL)
-            {
-                strncpy(temp_path, path + 1, length);
-                temp_path[length] = '\0';
-                path = temp_path;
-            }
-            else
-            {
-                printf("Error: Out of memory\n");
-                return;
-            }
-        }
-        else
-        {
-            printf("Error: Unclosed quotes\n");
-            return;
-        }
+        printf("Usage: delete [file_path]\n");
+        return;
     }
 
-    // delete file
+    char *path = strdup(args[1]);
+
+    if (*path == '"')
+    {
+        path = myRecoverString(args + 1, " ");
+    }
+
     if (unlink(path) != 0)
     {
-        printf("-myShell: unlink: %s: Aucun fichier ou répertoire de ce type\n", path);
+        printf("Error: Failed to delete '%s'\n", path);
+    }
+    else
+    {
+        printf("Deleted '%s' successfully\n", path);
     }
 
-    if (path != str[1])
-    {
-        free(path);
-    }
+    free(path);
 }
 
 void systemCall(char **arg)
@@ -321,27 +303,146 @@ void systemCall(char **arg)
 
 void mypipe(char **argv1, char **argv2)
 {
-    int fildes[2];
-    if (fork() == 0)
+    int pipefd[2];
+    pid_t pid;
+
+    // Create pipe
+    if (pipe(pipefd) == -1)
     {
-        pipe(fildes);
-        if (fork() == 0)
-        {
-            /* first component of command line */
-            close(STDOUT_FILENO);
-            dup(fildes[1]);
-            close(fildes[1]);
-            close(fildes[0]);
-            /* stdout now goes to pipe */
-            /* child process does command */
-            execvp(argv1[0], argv1);
-        }
-        /* 2nd command component of command line */
-        close(STDIN_FILENO);
-        dup(fildes[0]);
-        close(fildes[0]);
-        close(fildes[1]);
-        /* standard input now comes from pipe */
-        execvp(argv2[0], argv2);
+        perror("pipe");
+        exit(EXIT_FAILURE);
     }
+
+    // Fork child process
+    pid = fork();
+    if (pid == -1)
+    {
+        perror("fork");
+        exit(EXIT_FAILURE);
+    }
+    else if (pid == 0)
+    {
+        // Child process
+        close(pipefd[0]);
+        dup2(pipefd[1], STDOUT_FILENO);
+        close(pipefd[1]);
+
+        // Execute the first command
+        if (execvp(argv1[0], argv1) == -1)
+        {
+            perror("execvp");
+            exit(EXIT_FAILURE);
+        }
+    }
+    else
+    {
+        // Parent process
+        close(pipefd[1]);
+        dup2(pipefd[0], STDIN_FILENO);
+        close(pipefd[0]);
+
+        // Execute the second command
+        if (execvp(argv2[0], argv2) == -1)
+        {
+            perror("execvp");
+            exit(EXIT_FAILURE);
+        }
+    }
+}
+
+void move(char **arguments)
+{
+    if (arguments[1] == NULL || arguments[2] == NULL)
+    {
+        if (arguments[1] == NULL)
+            printf("mv: source file missing\n");
+        else
+            printf("mv: destination directory missing after '%s'\n", arguments[1]);
+        return;
+    }
+
+    if (arguments[3] != NULL)
+    {
+        printf("mv: too many arguments\n");
+        return;
+    }
+
+    char *filename = arguments[1];
+    char *last_slash = filename;
+    while (*filename != '\0')
+    {
+        if (*filename == '/')
+        {
+            last_slash = filename + 1;
+        }
+        filename++;
+    }
+
+    char *destination_path = malloc(strlen(arguments[2]) + strlen(last_slash) + 2);
+    if (destination_path == NULL)
+    {
+        perror("mv: memory allocation failed");
+        return;
+    }
+    sprintf(destination_path, "%s/%s", arguments[2], last_slash);
+
+    int result = rename(arguments[1], destination_path);
+
+    if (result != 0)
+    {
+        printf("mv: failed to move '%s' to '%s'\n", arguments[1], arguments[2]);
+    }
+    else
+    {
+        printf("'%s' successfully moved to '%s'\n", arguments[1], arguments[2]);
+    }
+
+    free(destination_path);
+}
+
+void echoappend(char **arguments)
+{
+    char *fileName = NULL;
+
+    // Find the file name
+    for (char **arg = arguments + 1; *arg != NULL; arg++)
+    {
+        if (**arg == '>')
+        {
+            fileName = *(arg + 1);
+            if (*fileName == '"')
+            {
+                fileName = myRecoverString(arguments + (arg - arguments + 1), " ");
+            }
+            break;
+        }
+    }
+
+    if (fileName == NULL)
+    {
+        printf("File name not provided.\n");
+        return;
+    }
+
+    // Open file in append mode
+    FILE *file = fopen(fileName, "a");
+    if (file == NULL)
+    {
+        printf("File '%s' does not exist. Creating new file.\n", fileName);
+        // If file doesn't exist, open in write mode to create a new file
+        file = fopen(fileName, "w");
+        if (file == NULL)
+        {
+            printf("Error creating file '%s'.\n", fileName);
+            return;
+        }
+    }
+
+    // Write arguments to file
+    for (char **arg = arguments + 1; *arg != NULL && **arg != '>'; arg++)
+    {
+        fprintf(file, "%s ", *arg);
+    }
+
+    fclose(file);
 }
